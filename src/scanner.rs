@@ -7,25 +7,29 @@ use crate::token_type::TokenType::{
 };
 use crate::Lox;
 use std::collections::HashMap;
+use std::sync::LazyLock;
 
-pub const KEYWORDS: HashMap<&'static str, TokenType> = HashMap::from([
-    ("and", And),
-    ("or", Or),
-    ("class", Class),
-    ("else", Else),
-    ("false", False),
-    ("true", True),
-    ("for", For),
-    ("fun", Fun),
-    ("if", If),
-    ("nil", Nil),
-    ("print", Print),
-    ("return", Return),
-    ("this", This),
-    ("super", Super),
-    ("var", Var),
-    ("while", While),
-]);
+static KEYWORDS: LazyLock<HashMap<&'static str, TokenType>> = LazyLock::new(|| {
+    HashMap::from([
+        ("and", And),
+        ("or", Or),
+        ("class", Class),
+        ("else", Else),
+        ("false", False),
+        ("true", True),
+        ("for", For),
+        ("fun", Fun),
+        ("if", If),
+        ("nil", Nil),
+        ("print", Print),
+        ("return", Return),
+        ("this", This),
+        ("super", Super),
+        ("var", Var),
+        ("while", While),
+    ])
+});
+
 #[derive(Default)]
 pub struct Scanner {
     pub source: String,
@@ -51,7 +55,7 @@ impl Scanner {
             self.scan_token(lox);
         }
         self.tokens.push(Token {
-            r#type: TokenType::EOF,
+            r#type: TokenType::Eof,
             lexeme: "".to_string(),
             line: self.line,
         });
@@ -70,17 +74,36 @@ impl Scanner {
             '+' => self.add_token(Plus),
             '*' => self.add_token(Star),
             ';' => self.add_token(Semicolon),
-            '!' => self.add_token(if self.r#match('=') { BangEqual } else { Bang }),
-            '=' => self.add_token(if self.r#match('=') { EqualEqual } else { Equal }),
-            '>' => self.add_token(if self.r#match('=') {
-                GreaterEqual
-            } else {
-                Greater
-            }),
-            '<' => self.add_token(if self.r#match('=') { LessEqual } else { Less }),
+            '!' => {
+                let token = if self.r#match('=') { BangEqual } else { Bang };
+                self.add_token(token);
+            }
+            '=' => {
+                let token = if self.r#match('=') { EqualEqual } else { Equal };
+                self.add_token(token);
+            }
+            '>' => {
+                let token = if self.r#match('=') {
+                    GreaterEqual
+                } else {
+                    Greater
+                };
+                self.add_token(token);
+            }
+            '<' => {
+                let token = if self.r#match('=') { LessEqual } else { Less };
+                self.add_token(token);
+            }
             '/' => {
                 if self.r#match('/') {
                     while self.peek() != '\n' && !self.is_at_end() {
+                        self.advance();
+                    }
+                } else if self.r#match('*') {
+                    if self.is_at_end() {
+                        lox.error(self.line, "Unterminated block comment");
+                    } else {
+                        self.handle_block_comment();
                         self.advance();
                     }
                 } else {
@@ -120,11 +143,8 @@ impl Scanner {
 
     fn add_token(&mut self, r#type: TokenType) {
         let text = unsafe { self.source.get_unchecked(self.start..self.current) };
-        self.tokens.push(Token {
-            r#type,
-            lexeme: text.to_string(),
-            line: self.line,
-        })
+        self.tokens
+            .push(Token::new(r#type, text.to_string(), self.line))
     }
 
     fn is_at_end(&self) -> bool {
@@ -188,11 +208,24 @@ impl Scanner {
                 }
                 _ => {
                     let ident = self.source.get(self.start..self.current).unwrap();
-                    let token = KEYWORDS.get(ident).unwrap_or_default();
-                    self.add_token(*(token.clone()));
+                    let token = KEYWORDS.get(ident).unwrap_or_default().clone();
+                    self.add_token(token);
                     break;
                 }
             }
+        }
+    }
+
+    fn handle_block_comment(&mut self) {
+        let mut nesting = 1;
+        while nesting > 0 {
+            if self.peek() == '*' && self.peek_next() == '/' {
+                nesting -= 1;
+            }
+            if self.peek() == '/' && self.peek_next() == '*' {
+                nesting += 1;
+            }
+            self.advance();
         }
     }
 }

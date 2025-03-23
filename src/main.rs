@@ -2,6 +2,7 @@ mod scanner;
 mod token;
 mod token_type;
 use crate::scanner::Scanner;
+use std::cmp::Ordering;
 use std::env;
 use std::error::Error;
 use std::io;
@@ -26,13 +27,13 @@ impl Lox {
 fn main() {
     let args = env::args().collect::<Vec<_>>();
     let mut lox = Lox { had_error: false };
-    if args.len() > 2 {
-        println!("Usage: rlox [script]");
-        exit(64);
-    } else if args.len() == 2 {
-        run_file(&mut lox, &args[1]).expect("error while reading file");
-    } else {
-        run_prompt(&mut lox);
+    match args.len().cmp(&2) {
+        Ordering::Greater => {
+            println!("Usage: rlox [script]");
+            exit(64);
+        }
+        Ordering::Equal => run_file(&mut lox, &args[1]).expect("error while reading file"),
+        _ => run_prompt(&mut lox),
     }
 }
 
@@ -51,12 +52,9 @@ pub fn run_prompt(lox: &mut Lox) {
     loop {
         print!(">");
         io::stdout().flush().unwrap();
-        match scanner.read_line(&mut buffer) {
-            Ok(_) => {
-                run(&buffer,lox);
-                lox.had_error = false;
-            }
-            Err(_) => {}
+        if scanner.read_line(&mut buffer).is_ok() {
+            run(&buffer, lox);
+            lox.had_error = false;
         }
     }
 }

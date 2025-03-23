@@ -1,5 +1,5 @@
 use crate::token_type::TokenType;
-use std::fmt::{ Display, Formatter};
+use std::fmt::{Display, Formatter};
 #[derive(Default)]
 pub struct Token {
     pub r#type: TokenType,
@@ -8,7 +8,7 @@ pub struct Token {
 }
 
 impl Token {
-    fn new(r#type: TokenType, lexeme: String, line: usize) -> Self {
+    pub fn new(r#type: TokenType, lexeme: String, line: usize) -> Self {
         Token {
             r#type,
             lexeme,
@@ -19,6 +19,6 @@ impl Token {
 
 impl Display for Token {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?} {}", self.r#type, self.lexeme)
+        write!(f, "{:?} {} ", self.r#type, self.lexeme)
     }
 }

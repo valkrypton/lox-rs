@@ -1,0 +1,13 @@
+// this is a commetn
+var lox = 1;
+var lox2 = lox+1;
+var lox3 = lox2/lox;
+var result = 42;
+/*
+
+//
+/*
+*/
+*/
+
+*/

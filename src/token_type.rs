@@ -47,7 +47,7 @@ pub enum TokenType {
     True,
     This,
 
-    EOF,
+    Eof,
 }
 
 impl Default for &TokenType {
