@@ -1,6 +1,7 @@
-use crate::token_type::TokenType;
 use std::fmt::{Display, Formatter};
-#[derive(Default)]
+
+use crate::token_type::TokenType;
+#[derive(Default, Clone)]
 pub struct Token {
     pub r#type: TokenType,
     pub lexeme: String,

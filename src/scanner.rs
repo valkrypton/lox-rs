@@ -1,13 +1,20 @@
-use crate::token::Token;
-use crate::token_type::TokenType;
-use crate::token_type::TokenType::{
-    And, Bang, BangEqual, Class, Comma, Dot, Else, Equal, EqualEqual, False, For, Fun, Greater,
-    GreaterEqual, If, LeftBrace, LeftParen, Less, LessEqual, Minus, Nil, Number, Or, Plus, Print,
-    Return, RightBrace, RightParen, Semicolon, Slash, Star, Super, This, True, Var, While,
+use std::{collections::HashMap, sync::LazyLock};
+
+use crate::{
+    token::Token
+    ,
+    token_type::{
+        TokenType,
+        TokenType::{
+            And, Bang, BangEqual, Class, Comma, Dot, Else, Equal, EqualEqual, False, For, Fun,
+            Greater, GreaterEqual, If, LeftBrace, LeftParen, Less, LessEqual, Minus, Nil, Number,
+            Or, Plus, Print, Return, RightBrace, RightParen, Semicolon, Slash, Star, Super, This,
+            True, Var, While,
+        },
+    },
+    Lox,
 };
-use crate::Lox;
-use std::collections::HashMap;
-use std::sync::LazyLock;
+use crate::error::error;
 
 static KEYWORDS: LazyLock<HashMap<&'static str, TokenType>> = LazyLock::new(|| {
     HashMap::from([
@@ -101,7 +108,7 @@ impl Scanner {
                     }
                 } else if self.r#match('*') {
                     if self.is_at_end() {
-                        lox.error(self.line, "Unterminated block comment");
+                        error(self.line, "Unterminated block comment");
                     } else {
                         self.handle_block_comment();
                         self.advance();
@@ -119,7 +126,7 @@ impl Scanner {
                 } else if c.is_ascii_alphabetic() || c == '_' {
                     self.identifier();
                 } else {
-                    lox.error(self.line, "Unexpected character");
+                    error(self.line, "Unexpected character");
                 }
             }
         }
@@ -173,7 +180,7 @@ impl Scanner {
             self.advance();
         }
         if self.is_at_end() {
-            lox.error(self.line, "Unterminated string");
+            error(self.line, "Unterminated string");
             return;
         }
         self.advance();
