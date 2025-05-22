@@ -1,7 +1,7 @@
 use crate::{token::Token, token_type::TokenType};
 
 pub enum Error {
-    ParserError,
+    ParserError(String),
 }
 
 pub fn error(line: usize, message: &str) {

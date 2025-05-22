@@ -1,54 +1,35 @@
+mod error;
 mod expression;
 mod parser;
 mod scanner;
 mod token;
 mod token_type;
-mod error;
 
 use std::{
+    cmp::Ordering,
+    env,
     error::Error,
     io::{self, BufRead, Write},
     process::exit,
 };
 
-use crate::{
-    expression::{AstPrinter, Expr, LiteralValue},
-    scanner::Scanner,
-    token::Token,
-    token_type::TokenType,
-};
+use crate::{expression::AstPrinter, parser::Parser, scanner::Scanner};
 
 pub struct Lox {
     pub had_error: bool,
 }
 
 fn main() {
-    // let args = env::args().collect::<Vec<_>>();
-    // let mut lox = Lox { had_error: false };
-    // match args.len().cmp(&2) {
-    //     Ordering::Greater => {
-    //         println!("Usage: rlox [script]");
-    //         exit(64);
-    //     }
-    //     Ordering::Equal => run_file(&mut lox, &args[1]).expect("error while reading file"),
-    //     _ => run_prompt(&mut lox),
-    // }
-    let expression = Expr::Binary {
-        left: Box::new(Expr::Unary {
-            operator: Token::new(TokenType::Minus, "-".to_owned(), 1),
-            right: Box::new(Expr::Literal {
-                value: LiteralValue::Number(123f64),
-            }),
-        }),
-        operator: Token::new(TokenType::Star, "*".to_owned(), 1),
-        right: Box::new(Expr::Grouping {
-            expression: Box::new(Expr::Literal {
-                value: LiteralValue::Number(45.67),
-            }),
-        }),
-    };
-    let ast_printer = AstPrinter;
-    println!("{}", ast_printer.print(expression));
+    let args = env::args().collect::<Vec<_>>();
+    let mut lox = Lox { had_error: false };
+    match args.len().cmp(&2) {
+        Ordering::Greater => {
+            println!("Usage: rlox [script]");
+            exit(64);
+        }
+        Ordering::Equal => run_file(&mut lox, &args[1]).expect("error while reading file"),
+        _ => run_prompt(&mut lox),
+    }
 }
 
 pub fn run_file(lox: &mut Lox, path: &str) -> Result<(), Box<dyn Error>> {
@@ -76,8 +57,11 @@ pub fn run_prompt(lox: &mut Lox) {
 fn run(source: &str, lox: &mut Lox) {
     let mut scanner = Scanner::new(source.to_string());
     scanner.scan_tokens(lox);
-
-    for token in scanner.tokens {
-        println!("{}", token);
+    let mut parser = Parser::new(scanner.tokens);
+    while !parser.complete(){
+        if let Ok(expr) = parser.parse() {
+            let ast_p = AstPrinter;
+            ast_p.print(expr);
+        }
     }
 }

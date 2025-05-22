@@ -1,5 +1,5 @@
 use crate::{
-    error::{Error, parser_error},
+    error::{Error, Error::ParserError},
     expression::{Expr, LiteralValue},
     token::Token,
     token_type::{
@@ -19,6 +19,14 @@ pub struct Parser {
 impl Parser {
     pub fn new(tokens: Vec<Token>) -> Self {
         Self { tokens, current: 0 }
+    }
+
+    pub fn parse(&mut self) ->Result<Expr,Error>{
+        self.expression()
+    }
+
+    pub fn complete(&self)-> bool{
+        self.is_at_end()
     }
 
     fn expression(&mut self) -> Result<Expr, Error> {
@@ -118,7 +126,7 @@ impl Parser {
                 })
             }
             _ => {
-                panic!("un expected expression")
+                Err(ParserError("expected expression".to_string()))
             }
         }
     }
@@ -127,8 +135,7 @@ impl Parser {
         if self.check(token_type) {
             return Ok(self.advance());
         }
-        parser_error(self.peek(), message);
-        Err(Error::ParserError)
+        Err(ParserError(message.to_owned()))
     }
 
     fn r#match(&mut self, tokens_types: &[TokenType]) -> bool {
@@ -163,5 +170,29 @@ impl Parser {
 
     fn previous(&self) -> &Token {
         self.tokens.get(self.current - 1).expect("token must exist")
+    }
+
+    fn synchronize(&mut self) {
+        self.advance();
+
+        while !self.is_at_end() {
+            if self.previous().r#type == TokenType::Semicolon {
+                return;
+            }
+            match self.peek().r#type {
+                TokenType::Class
+                | TokenType::Fun
+                | TokenType::Var
+                | TokenType::For
+                | TokenType::If
+                | TokenType::While
+                | TokenType::Print
+                | TokenType::Return => {
+                    return;
+                }
+                _ => {}
+            }
+            self.advance();
+        }
     }
 }
